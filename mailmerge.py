@@ -163,7 +163,7 @@ class MailMerge(object):
                     output.writestr(zi.filename, self.zip.read(zi))
             # add new images to media folder is we have images merged
             for img_id, img_data in self.media.items():
-                output.writestr('media/{}.png'.format(img_id), img_data)
+                output.writestr('word/media/{}.png'.format(img_id), img_data)
 
     def get_merge_fields(self, parts=None):
         if not parts:
@@ -293,7 +293,8 @@ class MailMerge(object):
     def __merge_field(self, part, field, text):
         if field.startswith('IMAGE:'):
             _, img_name = field.split(':')
-            inline_img_el = part.find('.//wp:docPr[@title="{}"]/..'.format(img_name), namespaces=NAMESPACES)
+            print('DESCR')
+            inline_img_el = part.find('.//wp:docPr[@descr="{}"]/..'.format(img_name), namespaces=NAMESPACES)
             if inline_img_el:
                 embed_node = inline_img_el.find('.//a:blip', namespaces=NAMESPACES)
                 if embed_node:
@@ -306,7 +307,7 @@ class MailMerge(object):
                     self.rels.findall('{%(ns)s}Relationship[@Type="%(od)s/image"]' % self.RELS_NAMESPACES)[-1]
                     new_img_relationship = deepcopy(last_img_relationship)
                     new_img_relationship.set('Id', img_id)
-                    new_img_relationship.set('Target', '/media/{}.png'.format(img_id))
+                    new_img_relationship.set('Target', 'media/{}.png'.format(img_id))
                     self.rels.getroot().append(new_img_relationship)
 
                     # replace the embed attrib with the new image_id
@@ -314,7 +315,7 @@ class MailMerge(object):
                     embed_attr = embed_node.attrib.keys()[0]
                     embed_node.attrib[embed_attr] = img_id
                 # mark as done
-                inline_img_el.find('wp:docPr', namespaces=NAMESPACES).attrib['title'] = 'replaced_image_{}'.format(
+                inline_img_el.find('wp:docPr', namespaces=NAMESPACES).attrib['descr'] = 'replaced_image_{}'.format(
                     img_id)
             return
 
