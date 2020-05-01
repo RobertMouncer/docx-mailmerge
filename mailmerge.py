@@ -1,10 +1,11 @@
 from copy import deepcopy
-import re
 import warnings
 from lxml.etree import Element
 from lxml import etree
 from zipfile import ZipFile, ZIP_DEFLATED
 from random import randint
+import shlex
+
 
 NAMESPACES = {
     'w': 'http://schemas.openxmlformats.org/wordprocessingml/2006/main',
@@ -56,7 +57,6 @@ class MailMerge(object):
                 pass
             to_delete = []
 
-            r = re.compile(r' MERGEFIELD +"?([^ ]+?)"? +(|\\\* MERGEFORMAT )', re.I)
             for part in self.parts.values():
 
                 for parent in part.findall('.//{%(w)s}fldSimple/..' % NAMESPACES):
@@ -65,10 +65,10 @@ class MailMerge(object):
                             continue
                         instr = child.attrib['{%(w)s}instr' % NAMESPACES]
 
-                        m = r.match(instr)
-                        if m is None:
+                        name = self.__parse_instr(instr)
+                        if name is None:
                             continue
-                        parent[idx] = Element('MergeField', name=m.group(1))
+                        parent[idx] = Element('MergeField', name=name)
 
                 for parent in part.findall('.//{%(w)s}instrText/../..' % NAMESPACES):
                     children = list(parent)
@@ -97,10 +97,11 @@ class MailMerge(object):
                         for instr in instr_elements[1:]:
                             instr.getparent().remove(instr)
 
-                        m = r.match(instr_text)
-                        if m is None:
+                        name = self.__parse_instr(instr_text)
+                        if name is None:
                             continue
-                        parent[idx_begin] = Element('MergeField', name=m.group(1))
+
+                        parent[idx_begin] = Element('MergeField', name=name)
 
                         # use this so we know *where* to put the replacement
                         instr_elements[0].tag = 'MergeText'
@@ -123,6 +124,16 @@ class MailMerge(object):
         except:
             self.zip.close()
             raise
+
+    @classmethod
+    def __parse_instr(cls, instr):
+        args = shlex.split(instr, posix=False)
+        if args[0] != 'MERGEFIELD':
+            return None
+        name = args[1]
+        if name[0] == '"' and name[-1] == '"':
+            name = name[1:-1]
+        return name
 
     def __get_tree_of_file(self, file):
         if isinstance(file, etree._Element):
@@ -316,7 +327,7 @@ class MailMerge(object):
             nodes = []
             # preserve new lines in replacement text
             text = text or ''  # text might be None
-            text_parts = text.replace('\r', '').split('\n')
+            text_parts = str(text).replace('\r', '').split('\n')
             for i, text_part in enumerate(text_parts):
                 text_node = Element('{%(w)s}t' % NAMESPACES)
                 text_node.text = text_part
