@@ -293,11 +293,11 @@ class MailMerge(object):
     def __merge_field(self, part, field, text):
         if field.startswith('IMAGE:'):
             _, img_name = field.split(':')
-            print('DESCR')
+
             inline_img_el = part.find('.//wp:docPr[@descr="{}"]/..'.format(img_name), namespaces=NAMESPACES)
-            if inline_img_el:
+            if inline_img_el is not None:
                 embed_node = inline_img_el.find('.//a:blip', namespaces=NAMESPACES)
-                if embed_node:
+                if embed_node is not None:
                     # generate a random id and add tp media list for later export to media folder in zip file
                     img_id = 'MMR{}'.format(randint(10000000, 999999999))
                     self.media[img_id] = text
