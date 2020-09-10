@@ -1,7 +1,10 @@
 This fork has been updated to mailmerge images in the latest revisions of word.
 To import an image: 
+
 1. Add a JPG or PNG to a word document - adjust its size to the size you want.
+
 2. Right click -> edit alt text -> add unique label
+
 3. Prefix dict key with "IMAGE:"
 
 ===============
